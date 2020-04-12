@@ -1,0 +1,161 @@
+---
+title: "Crosslines"
+author: "Hazard"
+date: "2020/4/12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# shoulders of giants
+```{r shoulders}
+options(stringsAsFactors = F) 
+rm(list = ls())
+
+library(crosslinks)
+library(ggplot2)
+library(aplot)
+library(dplyr)
+
+```
+
+# generate example data
+```{r example_data}
+# nodes
+nodes <- data.frame(
+  id = c(paste0("Gene", 1:10), paste0("Meth", 1:10),
+         paste0("Mir", 1:6), paste0("Drug", 1:8),
+         paste0("Tar", 1:8), paste0("Path", 1:6)),
+  type = c(rep("Gene", 10), rep("Meth", 10), 
+           rep("Mir", 6), rep("Drug", 8),
+           rep("Tar", 8), rep("Path", 6))
+  )
+
+# edges
+edges <- data.frame(rbind(
+  # gene vs mir
+  data.frame(
+    source = sample(nodes$id[nodes$type == "Gene"],
+                    replace = T, 30),
+    target = sample(nodes$id[nodes$type == "Mir"],
+                    replace = T, 30)),
+  # gene vs drug
+  data.frame(
+    source = sample(nodes$id[nodes$type == "Gene"],
+                    replace = T, 100),
+    target = sample(nodes$id[nodes$type == "Drug"],
+                    replace = T, 100)),
+  # meth vs drug
+  data.frame(
+    source = sample(nodes$id[nodes$type == "Meth"],
+                    replace = T, 100),
+    target = sample(nodes$id[nodes$type == "Drug"],
+                    replace = T, 100)),
+  # mir vs drug
+  data.frame(
+    source = sample(nodes$id[nodes$type == "Mir"],
+                    replace = T, 20),
+    target = sample(nodes$id[nodes$type == "Drug"],
+                    replace = T, 20)),
+  
+  # drug vs target
+  data.frame(
+    source = nodes$id[nodes$type == "Drug"],
+    target = nodes$id[nodes$type == "Tar"]),
+  # target vs path
+  data.frame(
+    source = sample(nodes$id[nodes$type == "Tar"],
+                    replace = T, 15),
+    target = sample(nodes$id[nodes$type == "Path"],
+                    replace = T, 15))
+))
+
+# gene annotation
+geneData <- data.frame(
+  gene = nodes$id[nodes$type == "Gene"],
+  lfc = runif(length(nodes$id[nodes$type == "Gene"]), 0, 6))
+# meth annotation
+methData <- data.frame(
+  meth = nodes$id[nodes$type == "Meth"],
+  lfc = runif(length(nodes$id[nodes$type == "Meth"]), -0.5, -0.2))
+# mir annotation
+mirData <- data.frame(
+  mir = nodes$id[nodes$type == "Mir"],# set the order as you want
+  lfc = runif(length(nodes$id[nodes$type == "Mir"]), -4,0))
+```
+
+```{r fig.width=10, fig.height=6}
+top <- geneData$gene[order(geneData$lfc, decreasing = T)] # set the order as you like
+bottom <- methData$meth[order(geneData$lfc, decreasing = T)] # In this case, Meth should be the same order with Gene
+left <- nodes$id[nodes$type == "Mir"] # set the order as you like
+right <- nodes$id[nodes$type == "Drug"] # set the order as you like
+
+columns <- list(
+  Drug = nodes$id[nodes$type == "Drug"], # set the order as you like
+  Target = nodes$id[nodes$type == "Tar"], # set the order as you like
+  Pathway = nodes$id[nodes$type == "Path"]# set the order as you like
+)
+
+height <- 10
+width <- 10
+flank_mult <- c(top = 0.1, bottom = 0.1,left = 0.1, right = 0.1)
+
+topAnn <- geneData %>%
+  mutate(gene_f = factor(gene, top)) %>%
+  ggplot(mapping = aes(
+    newCoord(gene_f, width, flank_mult[['top']]),
+    lfc)) +
+  geom_bar(fill = "red",
+           stat = "identity") +
+  geom_text(mapping = aes(label = gene), angle = 90, hjust =-0.2, fontface ="italic") +
+  labs(x = NULL, y = "log2(Fold Change)") +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+        axis.line.x = element_blank(),
+        axis.ticks.x = element_blank())
+
+# Bottom plot
+botAnn <- methData %>%
+  mutate(meth_f = factor(meth, bottom)) %>%
+  ggplot(mapping = aes(newCoord(meth_f, width, flank_mult[['bottom']]),
+                       lfc)) +
+  geom_bar(fill = "blue",
+           stat = "identity") +
+  #geom_text(mapping = aes(label = gene), angle = 90, hjust =-0.2, fontface ="italic") +
+  labs(x = NULL, y = "Difference") +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+        axis.line.x = element_blank(),
+        axis.ticks.x = element_blank())
+# left plot
+lftAnn <- mirData %>%
+  mutate(mir_f = factor(mir, left)) %>%
+  ggplot(mapping = aes(newCoord(mir_f, height, flank_mult[['left']]),
+                       lfc)) +
+  geom_bar(fill = "red",
+           stat = "identity", 
+           width = 0.6) +
+  geom_text(mapping = aes(y = 0,label = mir), 
+            vjust = -1, 
+            hjust = 1, fontface ="italic") +
+  labs(x = NULL, y = "log2(Fold Change)") +
+  theme_classic() +
+  theme(axis.text.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  coord_flip()
+
+
+p <- (squareCross(edges, top ,bottom, left, right, height = 10, width = 10, flank_mult = 0.1) +
+  scale_color_manual(values = c(86, 86, "yellow", "green"))) %>%
+  insert_top(topAnn, 0.4) %>%
+  insert_bottom(botAnn, 0.4) %>%
+  insert_left(lftAnn, 0.4) %>%
+  insert_right(columnCross(edges, columns, height = 10, flank_mult = 0.1, segment_shrink = 0.2) +
+     scale_color_manual(values = c("red", "red")) , 0.6)
+p
+```
+Beautify the plot using Adobe Illustrator 
+
