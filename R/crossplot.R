@@ -28,6 +28,9 @@ newCoord <- function(x, scale = 1, flank_mult = 0.1){
 #' @param width plot width, used for control coordinates
 #' @param height plot height, used for control coordinates
 #' @param flank_mult mulitply with `scale`, flankings at four sides,
+#' @param expand_xlim_mult expand x limits with expand_xlim_mult*width. This may be used when show_node_label is TRUE.
+#' @param expand_ylim_mult expand y limits with expand_ylim_mult*width
+#' @param show_node_label whether to show node label
 #'
 #' @return a ggplot object
 #' @export
@@ -39,7 +42,10 @@ newCoord <- function(x, scale = 1, flank_mult = 0.1){
 #' @importFrom stats na.omit
 squareCross <- function(edges, top, bottom, left, right, # Notice ID of nodes should be unique across four types
                         width = 1, height = 1,
-                        flank_mult = c(top = 0.1, bottom = 0.1,left = 0.1, right = 0.1)){
+                        show_node_label = F,
+                        flank_mult = c(top = 0.1, bottom = 0.1,left = 0.1, right = 0.1),
+                        expand_xlim_mult = c(0.2,0.2),
+                        expand_ylim_mult = c(0.2,0.2)){
   if(length(flank_mult) == 1) rep(flank_mult, 4)
   square = list(top = factor(top, top), bottom = factor(bottom, bottom),
                 left = factor(left, left), right = factor(right, right))
@@ -87,10 +93,21 @@ squareCross <- function(edges, top, bottom, left, right, # Notice ID of nodes sh
       TRUE ~ "other"
     ))
   )
-  ggplot(data = segments %>% na.omit) +
-    geom_segment(mapping = aes(x,y, xend = xend, yend = yend, color = type),
+  p <- ggplot() +
+    geom_segment(data = segments %>% na.omit,
+                 mapping = aes(x,y, xend = xend, yend = yend, color = type),
                  show.legend = F) +
+    expand_limits(x = expand_xlim_mult*width*c(-1, 1) + c(0, width),
+                  y = expand_ylim_mult*height*c(-1,1) + c(0, height))+
     theme_void()
+  if(show_node_label){
+    p <- p +
+      geom_text(mapping = aes(x = square_coord[[1]], y = rep(height, length(top)), label = top), hjust = 0, vjust = 0.5, angle = 90) +
+      geom_text(mapping = aes(x = square_coord[[2]], y= rep(0, length(bottom)), label = bottom), hjust = 1, vjust = 0.5, angle = 90) +
+      geom_text(mapping = aes(y = square_coord[[3]], x= rep(0, length(left)), label = left), hjust = 1, vjust = 0.5, angle = 0) +
+      geom_text(mapping = aes(y = square_coord[[4]], x = rep(width, length(right)), label = right), hjust = 0, vjust = 0.5, angle = 0)
+  }
+  return(p)
 }
 
 
@@ -112,17 +129,17 @@ columnCross <- function(edges, columns, # Notice ID of nodes should be unique ac
                         height = 1,
                         flank_mult = rep(0.1, length(columns)),
                         segment_shrink = 0.1){
-  if(length(flank_mult) == 1) rep(flank_mult, length(columns))
+  if(length(flank_mult) == 1) flank_mult <- rep(flank_mult, length(columns))
   cols = lapply(columns, function(x) factor(x, x))
   cols_coord <- mapply(newCoord, cols, rep(height, length(columns)), flank_mult)
 
   edges$source_coord <- unlist(cols_coord)[match(edges$source, unlist(columns))]
   edges$target_coord <- unlist(cols_coord)[match(edges$target, unlist(columns))]
-
+  cols_x <- seq_len(length(columns))
   segments <- data.frame(
-    x = colSums(sapply(edges$source, function(x) mapply(function(l, r) l %in% r, x, columns)) * c(1, 2, 3)),
+    x = colSums(sapply(edges$source, function(x) mapply(function(l, r) l %in% r, x, columns)) * cols_x),
     y = edges$source_coord,
-    xend = colSums(sapply(edges$target, function(x) mapply(function(l, r) l %in% r, x, columns)) * c(1, 2, 3)),
+    xend = colSums(sapply(edges$target, function(x) mapply(function(l, r) l %in% r, x, columns)) * cols_x),
     yend = edges$target_coord
   ) %>% na.omit()
   segments$type <- paste0(names(columns)[segments$x], " vs ", names(columns)[segments$xend])
