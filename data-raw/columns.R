@@ -11,7 +11,7 @@ nodes <- data.frame(
            rep("Mir", 6), rep("Drug", 8),
            rep("Tar", 8), rep("Path", 6)),
   color = sample(node_colors, 48, replace = T),
-  size = sample(1:4, 48, replace = T),
+  size = sample(3:10, 48, replace = T),
   alpha = sample((5:10)/10, 48, replace = T),
   shape = sample(1:20, 48, replace = T)
 )
@@ -55,9 +55,9 @@ edges <- data.frame(rbind(
                     replace = T, 15))
   ),
   color = sample(edge_colors, 273, replace = T),
-  type = sample(1:3, 273, replace = T),
+  type = sample(1:5, 273, replace = T),
   alpha = sample((5:10)/10, 273, replace = T),
-  shape = sample(1:20, 273, replace = T))
+  size = sample(1:3, 273, replace = T))
 
 # gene annotation
 geneData <- data.frame(

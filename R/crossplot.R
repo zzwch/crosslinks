@@ -126,6 +126,7 @@ squareCross <- function(edges, top, bottom, left, right, # Notice ID of nodes sh
 #' @examples
 #'
 #' @import ggplot2
+#'
 columnCross <- function(edges, columns, # Notice ID of nodes should be unique across four types
                         height = 1,
                         flank_mult = rep(0.1, length(columns)),
@@ -162,43 +163,46 @@ columnCross <- function(edges, columns, # Notice ID of nodes should be unique ac
 #' Visualization for links between different types of nodes with shapes and colors supported.
 #'
 #' @param edges a data.frame with at least two columns named with "source" and "target", which includes different nodes. Notice ID of nodes should be unique across four types
-#' @param nodes a data.frame of nodes and node-annotations. You could use factor to control node order.
+#' @param nodes a data.frame of nodes and node-annotations. first column is the node ID. You could use factor to control node order.
 #' @param columns a list of multiple columns of nodes to illustrate, the order will be used as level.
 #' @param height plot height, used for control coordinates
 #' @param flank_mult mulitply with `scale`, flankings at four sides,
 #' @param segment_shrink text may overlaid on segement, use this to avoid it
-#' @param line_aes_by a list named with type, alpha, color, size to control segment Aesthetics.
-#' type: a numeric value, or a vector of numeric, or a colname of edges including a vector of numeric. Allowed value: 0 = blank, 1 = solid, 2 = dashed, 3 = dotted, 4 = dotdash, 5 = longdash, 6 = twodash.
-#' alpha: same to type, but allowed value: 0-1.
-#' color: a color or a vector of colors, or a colname of edges of categories with line_colors to modify the colors of different categories.
-#' size: same to type, but allowed value: any numeric >= 0.
-#' @param point_aes_by a list named with alpha, color, size, fill, shape, size, stroke to control segment Aesthetics.
-#' alpha: same to line_aes_by, but colname of nodes.
-#' color: same to line_aes_by, but colname of nodes.
-#' fill: similar to color, but control the fill color. only used in specific shapes.
-#' shape: a value, or a vector, or colname of nodes. Allowed value:An integer in [0,25] or a charactor of length 1. Note that shapes 21-24 have both stroke colour and a fill
-#' size: same to line_aes_by, but colname of nodes.
-#' stroke: same to size. only used in shapes 21-24.
-#' @param line_colors modify the line color aes
-#' @param point_colors modify the point color aes
-#' @param point_fills modify the point fill aes
-#' @param point_shapes modify the point shape aes
+#' @param linetype: a numeric value, or a colname of edges. Allowed value: 0 = blank, 1 = solid, 2 = dashed, 3 = dotted, 4 = dotdash, 5 = longdash, 6 = twodash.
+#' @param line_alpha: same to linetype, but allowed value: 0-1.
+#' @param line_color: a color or a colname of edges.
+#' @param line_size: same to linetype, but allowed value: any numeric >= 0.
+#' @param pt_alpha: same to line_alpha, but colname of nodes.
+#' @param pt_color: same to line_color, but colname of nodes.
+#' @param pt_fill: similar to pt_color, but control the fill color. only used in specific shapes.
+#' @param pt_shape: a value, or colname of nodes. Allowed value:An integer in 0 to 25, or a charactor of length 1. Note that shapes 21-24 have both stroke colour and a fill
+#' @param pt_size: same to line_size, but colname of nodes.
+#' @param pt_stroke: same to pt_size only used in shapes 21-24.
 #'
 #' @return a ggplot object
+#' @importFrom dplyr %>%
+#' @import ggplot2
 #' @export
 #'
 #' @examples
-#' @importFrom dplyr %>%
-#' @import ggplot2
+#' \dontrun{
+#' columnCross2(edges, nodes, columns,
+#' height = 1, flank_mult = rep(0.1, length(columns)), segment_shrink = 0.1,
+#' linetype = "type", line_alpha = "alpha", line_color = "color", line_size = "size" ,
+#' pt_alpha = "alpha", pt_color = "color", pt_fill = "color",
+#' pt_shape = "shape", pt_size = "size", pt_stroke = 1)}
+
 columnCross2 <- function(edges, nodes, columns,
                          height = 1, flank_mult = rep(0.1, length(columns)), segment_shrink = 0.1,
-                         line_aes_by = list(type = 1, alpha = 1, color = "black", size = 1),
-                         point_aes_by = list(alpha = 1, color = "black", fill = "white",
-                                             shape = 1, size = 1, stroke = 1),
-                         line_colors = NULL, point_colors = NULL, point_fills = NULL, point_shapes = NULL){
+                         linetype = 1, line_alpha = 1, line_color = "black", line_size = 1,
+                         pt_alpha = 1, pt_color = "black", pt_fill = "white",
+                         pt_shape = 1, pt_size = 1, pt_stroke = 1){
   if(length(flank_mult) == 1) flank_mult <- rep(flank_mult, length(columns))
   cols = lapply(columns, function(x) factor(x, x))
   cols_coord <- mapply(newCoord, cols, rep(height, length(columns)), flank_mult)
+
+  nodes <- subset(nodes, nodes[,1] %in% unlist(columns))
+  edges <- subset(edges, edges$source %in% nodes[,1] & edges$target %in% nodes[,1])
 
   edges$source_coord <- unlist(cols_coord)[match(edges$source, unlist(columns))]
   edges$target_coord <- unlist(cols_coord)[match(edges$target, unlist(columns))]
@@ -211,37 +215,67 @@ columnCross2 <- function(edges, nodes, columns,
   ) %>% na.omit()
   segments$type <- paste0(names(columns)[segments$x], " vs ", names(columns)[segments$xend])
 
-  line_aes_by <- lapply(line_aes_by, checkValue, df = edges, name = "edges")
-  point_aes_by <- lapply(point_aes_by, checkValue, df = nodes, name = "nodes")
+  line_aes_by <- list(type = linetype,
+                      alpha = line_alpha,
+                      color = line_color,
+                      size = line_size)
+  point_aes_by <- list(alpha = pt_alpha,
+                       color = pt_color,
+                       fill = pt_fill,
+                       shape = pt_shape,
+                       size = pt_size)
 
-  sapply(line_aes_by, length) == 1
+  line_aes_by <- lapply(line_aes_by, checkAes, df = edges, name = "edges")
+  point_aes_by <- lapply(point_aes_by, checkAes, df = nodes, name = "nodes")
 
-  ggplot() +
-    geom_segment(data = segments,
-                 mapping = aes(x+segment_shrink, y,
-                               xend = xend-segment_shrink,
-                               yend = yend,
-                               color = type),
-                 show.legend = F) +
-    geom_point(data = do.call(
-      rbind,
-      lapply(1:length(columns),
-             function(i) data.frame(x = i, y = cols_coord[[i]], label = columns[[i]]))),
-      mapping = aes(x, y,
-                    size = as.name(point_size),
-                    aplha = as.name(point_alpha))) +
-    geom_text(data = do.call(
-      rbind,
-      lapply(1:length(columns),
-             function(i) data.frame(x = i, y = cols_coord[[i]], label = columns[[i]]))),
-      mapping = aes(x, y, label = label)) +
+  p <- ggplot()
+  # aes line color
+  p <- p + geom_segment(data = segments,
+                        mapping = aes(x+segment_shrink, y,
+                                      xend = xend-segment_shrink,
+                                      yend = yend),
+                        linetype = line_aes_by$type,
+                        alpha = line_aes_by$alpha,
+                        color = line_aes_by$color,
+                        size = line_aes_by$size,
+                        show.legend = F)
+  # aes point color
+  p <- p + geom_point(data = do.call(rbind,
+                                     lapply(1:length(columns),
+                                            function(i) data.frame(x = i, y = cols_coord[[i]], label = columns[[i]]))),
+                      mapping = aes(x, y),
+                      alpha = point_aes_by$alpha,
+                      color = point_aes_by$color,
+                      fill = point_aes_by$fill,
+                      shape = point_aes_by$shape,
+                      size = point_aes_by$size,
+                      show.legend = F)
+  p <- p + geom_text(data = do.call(rbind,
+                                    lapply(1:length(columns),
+                                           function(i) data.frame(x = i, y = cols_coord[[i]], label = columns[[i]]))),
+                     mapping = aes(x, y, label = label)) +
     theme_void()
+
+  return(p)
 }
 
-checkValue <- function(x, df, name = NULL){
+
+#' check aes
+#'
+#' a value or a colname
+#'
+#' @param x a value or a colname
+#' @param df a data.frame
+#' @param name report name
+#'
+#' @return a vector of nrow(df)
+#'
+#' @examples
+#'
+checkAes <- function(x, df, name = NULL){
   ret <- NULL
   if(length(x) == 1){
-    ret <- if(x %in% colnames(df)) x else rep(x, nrow(df))
+    ret <- if(x %in% colnames(df)) df[,x,drop = T] else rep(x, nrow(df))
   }else{
     if(length(x) == nrow(df))
       ret <- x
@@ -251,4 +285,56 @@ checkValue <- function(x, df, name = NULL){
     }
   }
   return(ret)
+}
+
+
+#' check the vector is/are color(s) or not
+#'
+#' @param x a vector
+#'
+#' @return a named vector
+#' @export
+#' @source https://stackoverflow.com/a/13290832
+#' @examples
+#'
+#' \dontrun{
+#' is.color(c(NA, "black", "blackk", "1", "#00", "#000000"))
+#' }
+is.color <- function(x) {
+  sapply(x, function(x_) {
+    tryCatch(is.matrix(col2rgb(x_)),
+             error = function(e) FALSE)
+  })
+}
+
+#' set aes for vector
+#'
+#' @param x a vector to be replaced with aes
+#' @param dict a vector of colors/shapes named with categories of x.
+#' @param type aes type, allowed: color, fill, shape.
+#'
+#' @return a vector of aes
+#' @export
+#'
+#' @examples
+#'
+aesReplacer <- function(x, dict, type = "color"){
+  if(!type %in% c("color", "fill", "shape")) stop("only color, fill, shape are supported!")
+  if(type %in% c("color", "fill")){
+    if(all(is.color(x))) return(x) # already colors
+  }else{
+    if(all(x %in% 0:25)) return(x)
+  }
+
+  if(is.null(dict)) return(NULL) # to use default color
+
+  # set colors
+  x_cat <- sort(unique(x))
+  if(length(dict) < length(x_cat)){
+    stop("dict is less than the categories!")
+  }
+  if(all(x_cat %in% names(dict))) return(dict[x])
+
+  dict <- stats::setNames(dict[1:length(x_cat)], nm = x_cat)
+  return(dict[x])
 }
