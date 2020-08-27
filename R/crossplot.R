@@ -132,7 +132,7 @@ columnCross <- function(edges, columns, # Notice ID of nodes should be unique ac
                         flank_mult = rep(0.1, length(columns)),
                         segment_shrink = 0.1){
   if(length(flank_mult) == 1) flank_mult <- rep(flank_mult, length(columns))
-  cols = lapply(columns, function(x) factor(x, x))
+  cols = lapply(columns, factor)
   cols_coord <- mapply(newCoord, cols, rep(height, length(columns)), flank_mult)
 
   edges$source_coord <- unlist(cols_coord)[match(edges$source, unlist(columns))]
@@ -165,19 +165,20 @@ columnCross <- function(edges, columns, # Notice ID of nodes should be unique ac
 #' @param edges a data.frame with at least two columns named with "source" and "target", which includes different nodes. Notice ID of nodes should be unique across four types
 #' @param nodes a data.frame of nodes and node-annotations. first column is the node ID. You could use factor to control node order.
 #' @param columns a list of multiple columns of nodes to illustrate, the order will be used as level.
+#' @param column_x a vector for x-axis coord of each column
 #' @param height plot height, used for control coordinates
-#' @param flank_mult mulitply with `scale`, flankings at four sides,
+#' @param flank_mult mulitply with `scale`, flankings at every sides,
 #' @param segment_shrink text may overlaid on segement, use this to avoid it
-#' @param linetype: a numeric value, or a colname of edges. Allowed value: 0 = blank, 1 = solid, 2 = dashed, 3 = dotted, 4 = dotdash, 5 = longdash, 6 = twodash.
-#' @param line_alpha: same to linetype, but allowed value: 0-1.
-#' @param line_color: a color or a colname of edges.
-#' @param line_size: same to linetype, but allowed value: any numeric >= 0.
-#' @param pt_alpha: same to line_alpha, but colname of nodes.
-#' @param pt_color: same to line_color, but colname of nodes.
-#' @param pt_fill: similar to pt_color, but control the fill color. only used in specific shapes.
-#' @param pt_shape: a value, or colname of nodes. Allowed value:An integer in 0 to 25, or a charactor of length 1. Note that shapes 21-24 have both stroke colour and a fill
-#' @param pt_size: same to line_size, but colname of nodes.
-#' @param pt_stroke: same to pt_size only used in shapes 21-24.
+#' @param linetype a numeric value, or a colname of edges. Allowed value: 0 = blank, 1 = solid, 2 = dashed, 3 = dotted, 4 = dotdash, 5 = longdash, 6 = twodash.
+#' @param line_alpha same to linetype, but allowed value: 0-1.
+#' @param line_color a color or a colname of edges.
+#' @param line_size same to linetype, but allowed value: any numeric >= 0.
+#' @param pt_alpha same to line_alpha, but colname of nodes.
+#' @param pt_color same to line_color, but colname of nodes.
+#' @param pt_fill similar to pt_color, but control the fill color. only used in specific shapes.
+#' @param pt_shape a value, or colname of nodes. Allowed value:An integer in 0 to 25, or a charactor of length 1. Note that shapes 21-24 have both stroke colour and a fill
+#' @param pt_size same to line_size, but colname of nodes.
+#' @param pt_stroke same to pt_size only used in shapes 21-24.
 #'
 #' @return a ggplot object
 #' @importFrom dplyr %>%
@@ -186,19 +187,18 @@ columnCross <- function(edges, columns, # Notice ID of nodes should be unique ac
 #'
 #' @examples
 #' \dontrun{
-#' columnCross2(edges, nodes, columns,
+#' columnCross2(edges, nodes, columns, 1:4,
 #' height = 1, flank_mult = rep(0.1, length(columns)), segment_shrink = 0.1,
 #' linetype = "type", line_alpha = "alpha", line_color = "color", line_size = "size" ,
 #' pt_alpha = "alpha", pt_color = "color", pt_fill = "color",
 #' pt_shape = "shape", pt_size = "size", pt_stroke = 1)}
-
-columnCross2 <- function(edges, nodes, columns,
+columnCross2 <- function(edges, nodes, columns, column_x = seq_len(length(columns)),
                          height = 1, flank_mult = rep(0.1, length(columns)), segment_shrink = 0.1,
                          linetype = 1, line_alpha = 1, line_color = "black", line_size = 1,
                          pt_alpha = 1, pt_color = "black", pt_fill = "white",
                          pt_shape = 1, pt_size = 1, pt_stroke = 1){
   if(length(flank_mult) == 1) flank_mult <- rep(flank_mult, length(columns))
-  cols = lapply(columns, function(x) factor(x, x))
+  cols = lapply(columns, factor)
   cols_coord <- mapply(newCoord, cols, rep(height, length(columns)), flank_mult)
 
   nodes <- subset(nodes, nodes[,1] %in% unlist(columns))
@@ -206,11 +206,10 @@ columnCross2 <- function(edges, nodes, columns,
 
   edges$source_coord <- unlist(cols_coord)[match(edges$source, unlist(columns))]
   edges$target_coord <- unlist(cols_coord)[match(edges$target, unlist(columns))]
-  cols_x <- seq_len(length(columns))
   segments <- data.frame(
-    x = colSums(sapply(edges$source, function(x) mapply(function(l, r) l %in% r, x, columns)) * cols_x),
+    x = colSums(sapply(edges$source, function(x) mapply(function(l, r) l %in% r, x, columns)) * column_x),
     y = edges$source_coord,
-    xend = colSums(sapply(edges$target, function(x) mapply(function(l, r) l %in% r, x, columns)) * cols_x),
+    xend = colSums(sapply(edges$target, function(x) mapply(function(l, r) l %in% r, x, columns)) * column_x),
     yend = edges$target_coord
   ) %>% na.omit()
   segments$type <- paste0(names(columns)[segments$x], " vs ", names(columns)[segments$xend])
@@ -242,7 +241,7 @@ columnCross2 <- function(edges, nodes, columns,
   # aes point color
   p <- p + geom_point(data = do.call(rbind,
                                      lapply(1:length(columns),
-                                            function(i) data.frame(x = i, y = cols_coord[[i]], label = columns[[i]]))),
+                                            function(i) data.frame(x = column_x[i], y = cols_coord[[i]], label = columns[[i]]))),
                       mapping = aes(x, y),
                       alpha = point_aes_by$alpha,
                       color = point_aes_by$color,
@@ -252,7 +251,7 @@ columnCross2 <- function(edges, nodes, columns,
                       show.legend = F)
   p <- p + geom_text(data = do.call(rbind,
                                     lapply(1:length(columns),
-                                           function(i) data.frame(x = i, y = cols_coord[[i]], label = columns[[i]]))),
+                                           function(i) data.frame(x = column_x[i], y = cols_coord[[i]], label = columns[[i]]))),
                      mapping = aes(x, y, label = label)) +
     theme_void()
 

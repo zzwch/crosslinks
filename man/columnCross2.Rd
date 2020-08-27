@@ -8,6 +8,7 @@ columnCross2(
   edges,
   nodes,
   columns,
+  column_x = seq_len(length(columns)),
   height = 1,
   flank_mult = rep(0.1, length(columns)),
   segment_shrink = 0.1,
@@ -30,31 +31,33 @@ columnCross2(
 
 \item{columns}{a list of multiple columns of nodes to illustrate, the order will be used as level.}
 
+\item{column_x}{a vector for x-axis coord of each column}
+
 \item{height}{plot height, used for control coordinates}
 
-\item{flank_mult}{mulitply with `scale`, flankings at four sides,}
+\item{flank_mult}{mulitply with `scale`, flankings at every sides,}
 
 \item{segment_shrink}{text may overlaid on segement, use this to avoid it}
 
-\item{linetype:}{a numeric value, or a colname of edges. Allowed value: 0 = blank, 1 = solid, 2 = dashed, 3 = dotted, 4 = dotdash, 5 = longdash, 6 = twodash.}
+\item{linetype}{a numeric value, or a colname of edges. Allowed value: 0 = blank, 1 = solid, 2 = dashed, 3 = dotted, 4 = dotdash, 5 = longdash, 6 = twodash.}
 
-\item{line_alpha:}{same to linetype, but allowed value: 0-1.}
+\item{line_alpha}{same to linetype, but allowed value: 0-1.}
 
-\item{line_color:}{a color or a colname of edges.}
+\item{line_color}{a color or a colname of edges.}
 
-\item{line_size:}{same to linetype, but allowed value: any numeric >= 0.}
+\item{line_size}{same to linetype, but allowed value: any numeric >= 0.}
 
-\item{pt_alpha:}{same to line_alpha, but colname of nodes.}
+\item{pt_alpha}{same to line_alpha, but colname of nodes.}
 
-\item{pt_color:}{same to line_color, but colname of nodes.}
+\item{pt_color}{same to line_color, but colname of nodes.}
 
-\item{pt_fill:}{similar to pt_color, but control the fill color. only used in specific shapes.}
+\item{pt_fill}{similar to pt_color, but control the fill color. only used in specific shapes.}
 
-\item{pt_shape:}{a value, or colname of nodes. Allowed value:An integer in 0 to 25, or a charactor of length 1. Note that shapes 21-24 have both stroke colour and a fill}
+\item{pt_shape}{a value, or colname of nodes. Allowed value:An integer in 0 to 25, or a charactor of length 1. Note that shapes 21-24 have both stroke colour and a fill}
 
-\item{pt_size:}{same to line_size, but colname of nodes.}
+\item{pt_size}{same to line_size, but colname of nodes.}
 
-\item{pt_stroke:}{same to pt_size only used in shapes 21-24.}
+\item{pt_stroke}{same to pt_size only used in shapes 21-24.}
 }
 \value{
 a ggplot object
