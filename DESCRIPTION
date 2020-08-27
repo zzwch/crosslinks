@@ -1,7 +1,7 @@
 Package: crosslinks
 Type: Package
 Title: Plot cross lines in square and columns
-Version: 0.1.0
+Version: 0.1.1
 Author: Zongcheng Li
 Maintainer: Zongcheng Li <lizc07@vip.qq.com>
 Description: Visualization for links between four types of nodes with annotation plots
