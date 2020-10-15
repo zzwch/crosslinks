@@ -45,19 +45,19 @@ columnCross2(
 
 \item{line_color}{a color or a colname of edges.}
 
-\item{line_size}{same to linetype, but allowed value: any numeric >= 0.}
+\item{line_size}{a numeric value, or a colname of edges; control line width, allowed value: any numeric >= 0.}
 
 \item{pt_alpha}{same to line_alpha, but colname of nodes.}
 
 \item{pt_color}{same to line_color, but colname of nodes.}
 
-\item{pt_fill}{similar to pt_color, but control the fill color. only used in specific shapes.}
+\item{pt_fill}{similar to pt_color, but control the fill color. only used in shapes 21-24.}
 
 \item{pt_shape}{a value, or colname of nodes. Allowed value:An integer in 0 to 25, or a charactor of length 1. Note that shapes 21-24 have both stroke colour and a fill}
 
 \item{pt_size}{same to line_size, but colname of nodes.}
 
-\item{pt_stroke}{same to pt_size only used in shapes 21-24.}
+\item{pt_stroke}{a numeric value, or a colname of nodes; control border thickness of point.}
 }
 \value{
 a ggplot object
@@ -67,7 +67,7 @@ Visualization for links between different types of nodes with shapes and colors 
 }
 \examples{
 \dontrun{
-columnCross2(edges, nodes, columns,
+columnCross2(edges, nodes, columns, 1:4,
 height = 1, flank_mult = rep(0.1, length(columns)), segment_shrink = 0.1,
 linetype = "type", line_alpha = "alpha", line_color = "color", line_size = "size" ,
 pt_alpha = "alpha", pt_color = "color", pt_fill = "color",

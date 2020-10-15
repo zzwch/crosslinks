@@ -12,6 +12,7 @@
 #' newCoord(1:10, scale = 110, flank_mult = 0.1)
 #'
 #' @importFrom scales rescale
+#'
 newCoord <- function(x, scale = 1, flank_mult = 0.1){
   if(!is.factor(x)) x <- factor(x, x)
   flank <- scale * flank_mult
@@ -40,6 +41,7 @@ newCoord <- function(x, scale = 1, flank_mult = 0.1){
 #' @import ggplot2
 #' @importFrom dplyr %>%
 #' @importFrom stats na.omit
+#'
 squareCross <- function(edges, top, bottom, left, right, # Notice ID of nodes should be unique across four types
                         width = 1, height = 1,
                         show_node_label = F,
@@ -172,13 +174,13 @@ columnCross <- function(edges, columns, # Notice ID of nodes should be unique ac
 #' @param linetype a numeric value, or a colname of edges. Allowed value: 0 = blank, 1 = solid, 2 = dashed, 3 = dotted, 4 = dotdash, 5 = longdash, 6 = twodash.
 #' @param line_alpha same to linetype, but allowed value: 0-1.
 #' @param line_color a color or a colname of edges.
-#' @param line_size same to linetype, but allowed value: any numeric >= 0.
+#' @param line_size a numeric value, or a colname of edges; control line width, allowed value: any numeric >= 0.
 #' @param pt_alpha same to line_alpha, but colname of nodes.
 #' @param pt_color same to line_color, but colname of nodes.
-#' @param pt_fill similar to pt_color, but control the fill color. only used in specific shapes.
+#' @param pt_fill similar to pt_color, but control the fill color. only used in shapes 21-24.
 #' @param pt_shape a value, or colname of nodes. Allowed value:An integer in 0 to 25, or a charactor of length 1. Note that shapes 21-24 have both stroke colour and a fill
 #' @param pt_size same to line_size, but colname of nodes.
-#' @param pt_stroke same to pt_size only used in shapes 21-24.
+#' @param pt_stroke a numeric value, or a colname of nodes; control border thickness of point.
 #'
 #' @return a ggplot object
 #' @importFrom dplyr %>%
@@ -222,7 +224,8 @@ columnCross2 <- function(edges, nodes, columns, column_x = seq_len(length(column
                        color = pt_color,
                        fill = pt_fill,
                        shape = pt_shape,
-                       size = pt_size)
+                       size = pt_size,
+                       stroke = pt_stroke)
 
   line_aes_by <- lapply(line_aes_by, checkAes, df = edges, name = "edges")
   point_aes_by <- lapply(point_aes_by, checkAes, df = nodes, name = "nodes")
@@ -248,6 +251,7 @@ columnCross2 <- function(edges, nodes, columns, column_x = seq_len(length(column
                       fill = point_aes_by$fill,
                       shape = point_aes_by$shape,
                       size = point_aes_by$size,
+                      stroke = point_aes_by$stroke,
                       show.legend = F)
   p <- p + geom_text(data = do.call(rbind,
                                     lapply(1:length(columns),
@@ -268,6 +272,7 @@ columnCross2 <- function(edges, nodes, columns, column_x = seq_len(length(column
 #' @param name report name
 #'
 #' @return a vector of nrow(df)
+#'
 #'
 #' @examples
 #'
